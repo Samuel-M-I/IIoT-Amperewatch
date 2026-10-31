@@ -1,0 +1,10 @@
+# Permisos por usuario (principio de mínimo privilegio)
+
+# El backend solo puede LEER lo que publican los equipos
+user backend
+topic read industrial/amperewatch/#
+
+# La ESP32 (o su simulador) solo puede ESCRIBIR sus dos topics
+user esp32
+topic write industrial/amperewatch/rms
+topic write industrial/amperewatch/waveform

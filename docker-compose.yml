@@ -4,8 +4,7 @@ services:
     container_name: mosquitto_broker
     restart: always
     ports:
-      - "1883:1883"
-      - "8883:8883"
+      - "8883:8883"          # Solo TLS. Se eliminó el 1883 sin cifrar.
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
@@ -19,8 +18,13 @@ services:
       - "5000:5000"
     volumes:
       - ./backend:/app
+      - ./certs/ca.crt:/certs/ca.crt:ro
     environment:
       - MQTT_BROKER=mqtt-broker
+      - MQTT_PORT=8883
+      - MQTT_CA_CERT=/certs/ca.crt
+      - MQTT_USER=${MQTT_BACKEND_USER}
+      - MQTT_PASSWORD=${MQTT_BACKEND_PASSWORD}
     depends_on:
       - mqtt-broker
 
@@ -28,6 +32,14 @@ services:
     build: ./sim
     container_name: simulador_esp32
     restart: always
+    volumes:
+      - ./certs/ca.crt:/certs/ca.crt:ro
+    environment:
+      - MQTT_BROKER=mqtt-broker
+      - MQTT_PORT=8883
+      - MQTT_CA_CERT=/certs/ca.crt
+      - MQTT_USER=${MQTT_DEVICE_USER}
+      - MQTT_PASSWORD=${MQTT_DEVICE_PASSWORD}
     depends_on:
       - mqtt-broker
       - ampere-backend

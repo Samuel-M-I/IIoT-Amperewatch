@@ -4,10 +4,14 @@ import time
 from datetime import datetime
 import random
 import math
+import os
 
-# Configuración del Broker dentro de la red Docker
-BROKER = "mqtt-broker"
-PORT = 1883
+# Configuración del Broker (TLS + usuario/contraseña, desde variables de entorno)
+BROKER = os.getenv("MQTT_BROKER", "mqtt-broker")
+PORT = int(os.getenv("MQTT_PORT", 8883))
+CA_CERT = os.getenv("MQTT_CA_CERT", "/certs/ca.crt")
+MQTT_USER = os.getenv("MQTT_USER")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 
 TOPIC_RMS = "industrial/amperewatch/rms"
 TOPIC_WAVEFORM = "industrial/amperewatch/waveform"
@@ -15,10 +19,23 @@ TOPIC_WAVEFORM = "industrial/amperewatch/waveform"
 # Inicialización compatible con paho-mqtt v2.0+
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "Simulador_ESP32")
 
+
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("🔒 Simulador autenticado y conectado por TLS al Broker MQTT.")
+    else:
+        print(f"❌ El broker rechazó al simulador (código {rc}). Revisa usuario/contraseña.")
+
+
+client.on_connect = on_connect
+client.tls_set(ca_certs=CA_CERT)
+if MQTT_USER:
+    client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
+
 try:
     client.connect(BROKER, PORT, 60)
     client.loop_start()
-    print("🚀 Simulador de Motor (ESP32) conectado al Broker MQTT.")
+    print("🚀 Simulador de Motor (ESP32) iniciando...")
 
     contador = 0
     fase_arranque = True

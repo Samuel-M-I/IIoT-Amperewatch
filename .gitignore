@@ -1,5 +1,11 @@
 __pycache__/
 backend/app/__pycache__/
-*.db
 *.pyc
+*.db
+
+# --- Secretos: NUNCA subir a GitHub ---
 .env
+certs/*
+!certs/.gitkeep
+mosquitto/config/passwd
+mosquitto/data/

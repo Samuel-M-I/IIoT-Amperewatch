@@ -9,7 +9,10 @@ class Config:
 
     # --- MQTT ---
     MQTT_BROKER = os.getenv("MQTT_BROKER", "mqtt-broker")
-    MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
+    MQTT_PORT = int(os.getenv("MQTT_PORT", 8883))
+    MQTT_CA_CERT = os.getenv("MQTT_CA_CERT", "/certs/ca.crt")   # CA que firmó el broker
+    MQTT_USER = os.getenv("MQTT_USER")
+    MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
     MQTT_CLIENT_ID = "Backend_AmpereWatch"
     TOPIC_RMS = "industrial/amperewatch/rms"
     TOPIC_WAVEFORM = "industrial/amperewatch/waveform"
