@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>AmpereWatch IIoT Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+    <h1>AmpereWatch: Monitoreo IIoT Industrial</h1>
+
+    <div class="card">
+        <p>Estado del Servidor: <strong>Activo y Conectado (MQTT &amp; Flask)</strong></p>
+        <p>Paquetes de forma de onda (última hora en búfer): <strong>{{ total_paquetes_onda }}</strong></p>
+    </div>
+
+    <!-- Tarjetas de métricas en tiempo real (actualizadas por dashboard.js) -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <h3>Corriente Promedio (Hoy)</h3>
+            <p id="stat-prom">0.00 A</p>
+        </div>
+        <div class="metric-card">
+            <h3>Corriente Máxima (Hoy)</h3>
+            <p id="stat-max">0.00 A</p>
+        </div>
+        <div class="metric-card">
+            <h3>Corriente Mínima (Hoy)</h3>
+            <p id="stat-min">0.00 A</p>
+        </div>
+        <div class="metric-card">
+            <h3>Eventos Sobrecarga</h3>
+            <p id="stat-overload" class="danger">0</p>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Tendencia Corriente RMS (A)</h3>
+            <canvas id="rmsChart"></canvas>
+        </div>
+        <div class="card">
+            <h3>Forma de Onda en Tiempo Real (<span id="wf-count">0</span> muestras)</h3>
+            <canvas id="waveformChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Histórico de Reportes Diarios (Objetivo 4)</h2>
+        <table>
+            <tr><th>Fecha</th><th>Máx (A)</th><th>Mín (A)</th><th>Prom (A)</th><th>Sobrecargas</th><th>kWh Est.</th></tr>
+            {% for rep in reportes %}
+            <tr>
+                <td>{{ rep[0] }}</td><td>{{ rep[1] }}</td><td>{{ rep[2] }}</td>
+                <td>{{ rep[3] }}</td><td>{{ rep[4] }}</td><td>{{ rep[5] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
