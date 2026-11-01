@@ -1,3 +1,7 @@
+# PLANTILLA de permisos. El script scripts/setup_security.sh la copia a 'acl'
+# (archivo que Git ignora y que pertenece al usuario del broker).
+# Para cambiar permisos: edita ESTE archivo y vuelve a ejecutar el script.
+
 # Permisos por usuario (principio de mínimo privilegio)
 
 # El backend solo puede LEER lo que publican los equipos

@@ -4,7 +4,7 @@ services:
     container_name: mosquitto_broker
     restart: always
     ports:
-      - "8883:8883"          # Solo TLS. Se eliminó el 1883 sin cifrar.
+      - "8883:8883"
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
@@ -15,7 +15,7 @@ services:
     container_name: ampere_backend
     restart: always
     ports:
-      - "5000:5000"
+      - "5000"
     volumes:
       - ./backend:/app
       - ./certs/ca.crt:/certs/ca.crt:ro
@@ -25,8 +25,24 @@ services:
       - MQTT_CA_CERT=/certs/ca.crt
       - MQTT_USER=${MQTT_BACKEND_USER}
       - MQTT_PASSWORD=${MQTT_BACKEND_PASSWORD}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
     depends_on:
       - mqtt-broker
+  nginx:
+    image: nginx:alpine
+    container_name: ampere_proxy
+    restart: always
+    ports:
+      - "80:80"              # Redirige a HTTPS y sirve ca.crt
+      - "443:443"            # Dashboard por HTTPS
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/proxy_params.inc:/etc/nginx/conf.d/proxy_params.inc:ro
+      - ./certs/ca.crt:/certs/ca.crt:ro
+      - ./certs/web.crt:/certs/web.crt:ro
+      - ./certs/web.key:/certs/web.key:ro
+    depends_on:
+      - ampere-backend
 
   simulador-esp32:
     build: ./sim

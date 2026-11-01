@@ -8,4 +8,5 @@ backend/app/__pycache__/
 certs/*
 !certs/.gitkeep
 mosquitto/config/passwd
+mosquitto/config/acl
 mosquitto/data/

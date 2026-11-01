@@ -51,6 +51,26 @@ def init_db():
             )
         ''')
 
+        # Usuarios del dashboard (la contraseña se guarda SOLO como hash)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                password_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                last_login TEXT
+            )
+        ''')
+
+        # Sesiones activas (del lado del servidor: se pueden revocar al instante)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sessions (
+                sid TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                expires_at REAL NOT NULL
+            )
+        ''')
+
         # Reportes diarios consolidados (Objetivo 4)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS daily_reports (
@@ -140,3 +160,85 @@ def get_recent_reports(limit):
             FROM daily_reports ORDER BY id DESC LIMIT ?
         ''', (limit,))
         return cursor.fetchall()
+
+
+# ---------------------------------------------------------------- usuarios
+def _fila_a_usuario(fila):
+    if not fila:
+        return None
+    return {"id": fila[0], "username": fila[1], "password_hash": fila[2], "last_login": fila[3]}
+
+
+_COLS_USUARIO = "id, username, password_hash, last_login"
+
+
+def get_user_by_username(username):
+    with db_cursor() as cursor:
+        cursor.execute(f"SELECT {_COLS_USUARIO} FROM users WHERE username = ?", (username,))
+        return _fila_a_usuario(cursor.fetchone())
+
+
+def create_user(username, password_hash, created_at):
+    """Lanza sqlite3.IntegrityError si el usuario ya existe."""
+    with db_cursor(commit=True) as cursor:
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
+            (username, password_hash, created_at),
+        )
+
+
+def set_user_password(username, password_hash):
+    """Cambia la contraseña y CIERRA todas las sesiones abiertas de ese usuario."""
+    with db_cursor(commit=True) as cursor:
+        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        fila = cursor.fetchone()
+        if not fila:
+            return False
+        cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash, fila[0]))
+        cursor.execute("DELETE FROM sessions WHERE user_id = ?", (fila[0],))
+        return True
+
+
+def delete_user(username):
+    with db_cursor(commit=True) as cursor:
+        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        fila = cursor.fetchone()
+        if not fila:
+            return False
+        cursor.execute("DELETE FROM sessions WHERE user_id = ?", (fila[0],))
+        cursor.execute("DELETE FROM users WHERE id = ?", (fila[0],))
+        return True
+
+
+def list_users():
+    with db_cursor() as cursor:
+        cursor.execute("SELECT username, created_at, last_login FROM users ORDER BY id")
+        return cursor.fetchall()
+
+
+def update_last_login(user_id, timestamp):
+    with db_cursor(commit=True) as cursor:
+        cursor.execute("UPDATE users SET last_login = ? WHERE id = ?", (timestamp, user_id))
+
+
+# ---------------------------------------------------------------- sesiones
+def create_session(sid, user_id, expires_at, now):
+    with db_cursor(commit=True) as cursor:
+        cursor.execute("DELETE FROM sessions WHERE expires_at < ?", (now,))   # limpieza
+        cursor.execute("INSERT INTO sessions (sid, user_id, expires_at) VALUES (?, ?, ?)",
+                       (sid, user_id, expires_at))
+
+
+def get_user_by_session(sid, now):
+    """Usuario dueño de una sesión vigente, o None."""
+    with db_cursor() as cursor:
+        cursor.execute(
+            "SELECT u.id, u.username, u.password_hash, u.last_login "
+            "FROM sessions s JOIN users u ON u.id = s.user_id "
+            "WHERE s.sid = ? AND s.expires_at > ?", (sid, now))
+        return _fila_a_usuario(cursor.fetchone())
+
+
+def delete_session(sid):
+    with db_cursor(commit=True) as cursor:
+        cursor.execute("DELETE FROM sessions WHERE sid = ?", (sid,))

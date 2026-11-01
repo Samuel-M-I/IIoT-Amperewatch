@@ -11,3 +11,20 @@ table { width: 100%; border-collapse: collapse; background: white; margin-top: 1
 th, td { padding: 8px; border: 1px solid #ddd; text-align: center; font-size: 14px; }
 th { background: #007bff; color: white; }
 .ALERTA_SOBRECARGA { background: #ffcccc; color: #900; font-weight: bold; }
+
+/* --- Barra superior con usuario --- */
+.topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.userbox { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 14px; color: #555; }
+.userbox button { background: #6c757d; color: white; border: 0; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+.userbox button:hover { background: #545b62; }
+
+/* --- Pantalla de login --- */
+.login-body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+.login-card { background: white; width: 100%; max-width: 360px; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.login-card h1 { margin: 0; text-align: center; }
+.login-sub { text-align: center; color: #666; margin: 5px 0 20px; font-size: 14px; }
+.login-card label { display: block; margin: 12px 0 4px; font-size: 14px; color: #444; }
+.login-card input[type=text], .login-card input[type=password] { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; }
+.login-card button { width: 100%; margin-top: 20px; padding: 11px; background: #007bff; color: white; border: 0; border-radius: 4px; font-size: 16px; cursor: pointer; }
+.login-card button:hover { background: #0063cc; }
+.login-error { background: #ffe0e0; color: #900; padding: 10px; border-radius: 4px; font-size: 14px; margin-bottom: 5px; }
