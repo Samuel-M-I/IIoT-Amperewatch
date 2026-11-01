@@ -28,3 +28,7 @@ th { background: #007bff; color: white; }
 .login-card button { width: 100%; margin-top: 20px; padding: 11px; background: #007bff; color: white; border: 0; border-radius: 4px; font-size: 16px; cursor: pointer; }
 .login-card button:hover { background: #0063cc; }
 .login-error { background: #ffe0e0; color: #900; padding: 10px; border-radius: 4px; font-size: 14px; margin-bottom: 5px; }
+
+/* --- Aviso de errores del panel --- */
+.aviso { background: #fff3cd; color: #664d03; border: 1px solid #ffe69c; padding: 12px 15px; border-radius: 5px; margin-bottom: 20px; font-size: 14px; }
+.aviso[hidden] { display: none; }

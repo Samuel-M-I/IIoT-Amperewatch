@@ -3,15 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>AmpereWatch IIoT Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/vendor/chart.umd.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
 <body>
-    <h1>AmpereWatch: Monitoreo IIoT Industrial</h1>
+    <div class="topbar">
+        <h1>AmpereWatch: Monitoreo IIoT Industrial</h1>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="userbox">
+            <span>👤 {{ g.user.username }}</span>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit">Cerrar sesión</button>
+        </form>
+    </div>
+
+    <div id="aviso" class="aviso" role="alert" hidden></div>
 
     <div class="card">
         <p>Estado del Servidor: <strong>Activo y Conectado (MQTT &amp; Flask)</strong></p>
         <p>Paquetes de forma de onda (última hora en búfer): <strong>{{ total_paquetes_onda }}</strong></p>
+        <p>Última actualización de datos: <strong id="ultima-act">--:--:--</strong></p>
     </div>
 
     <!-- Tarjetas de métricas en tiempo real (actualizadas por dashboard.js) -->
@@ -61,3 +71,4 @@
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 </html>
+
