@@ -1,8 +1,10 @@
 import json
+import math
 from paho.mqtt import client as mqtt_client
 
 from config import Config
 from app import database as db
+from app.analysis import PaqueteInvalido, analizar_onda, parsear_paquete_onda
 from app.services import timestamp_actual, clasificar_estado, limpiar_datos_antiguos
 
 MOTIVOS_RC = {
@@ -27,19 +29,36 @@ def on_connect_fail(client, userdata):
           "(¿broker apagado, CA incorrecta o nombre no incluido en el certificado?). Reintentando...")
 
 
+def _procesar_rms(datos):
+    rms = datos.get("rms") if isinstance(datos, dict) else None
+    if isinstance(rms, bool) or not isinstance(rms, (int, float)) or not math.isfinite(rms) \
+            or not (0 <= rms <= Config.CORRIENTE_MAX_A):
+        raise PaqueteInvalido(f"valor RMS inválido: {rms!r}")
+    # La hora la pone el SERVIDOR: la ESP32 no tiene reloj confiable y un equipo con la
+    # hora mala corrompería los reportes diarios.
+    db.insert_rms(timestamp_actual(), float(rms), clasificar_estado(rms))
+
+
+def _procesar_onda(datos):
+    onda = parsear_paquete_onda(datos)
+    metricas = analizar_onda(onda.muestras, onda.t_us)
+    db.insert_waveform(timestamp_actual(), onda.muestras, onda.dt_us, onda.t_irregular, metricas)
+    limpiar_datos_antiguos()
+
+
 def on_message(client, userdata, msg):
+    # Los datos de un dispositivo NO son de confianza: se limita el tamaño y se valida todo.
+    if len(msg.payload) > Config.MQTT_MAX_PAYLOAD_BYTES:
+        print(f"⚠️ Mensaje descartado en {msg.topic}: {len(msg.payload)} bytes (máx {Config.MQTT_MAX_PAYLOAD_BYTES})")
+        return
     try:
-        data = json.loads(msg.payload.decode("utf-8"))
-        timestamp = data.get("timestamp", timestamp_actual())
-
+        datos = json.loads(msg.payload.decode("utf-8"))
         if msg.topic == Config.TOPIC_RMS:
-            corriente_rms = float(data.get("rms", 0.0))
-            db.insert_rms(timestamp, corriente_rms, clasificar_estado(corriente_rms))
-
+            _procesar_rms(datos)
         elif msg.topic == Config.TOPIC_WAVEFORM:
-            db.insert_waveform(timestamp, data.get("samples", []))
-            limpiar_datos_antiguos()
-
+            _procesar_onda(datos)
+    except (PaqueteInvalido, ValueError) as e:      # incluye JSON mal formado y UnicodeDecodeError
+        print(f"⚠️ Mensaje descartado en {msg.topic}: {e}")
     except Exception as e:
         print(f"Error procesando mensaje MQTT en tópico {msg.topic}: {e}")
 

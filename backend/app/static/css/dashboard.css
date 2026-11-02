@@ -32,3 +32,31 @@ th { background: #007bff; color: white; }
 /* --- Aviso de errores del panel --- */
 .aviso { background: #fff3cd; color: #664d03; border: 1px solid #ffe69c; padding: 12px 15px; border-radius: 5px; margin-bottom: 20px; font-size: 14px; }
 .aviso[hidden] { display: none; }
+
+/* --- Osciloscopio --- */
+.scope-card { background: #0b1712; color: #cfeedd; border: 1px solid #1f3b2c; }
+.scope-card h3 { margin: 0; color: #8cf0b0; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.scope-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.scope-controls { display: flex; gap: 8px; }
+.scope-btn { background: #12281d; color: #8cf0b0; border: 1px solid #2b5a40; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
+.scope-btn:hover { background: #1a3a2a; }
+.scope-btn.activo { background: #1f6b45; color: #fff; border-color: #39ff88; }
+.scope-readouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.ro { background: #07110c; border: 1px solid #1f3b2c; border-radius: 4px; padding: 6px 10px; }
+.ro-label { display: block; font-size: 11px; color: #7fa894; letter-spacing: .05em; text-transform: uppercase; }
+.ro-valor { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 20px; font-weight: bold; }
+.ro-irms .ro-valor { color: #ffd54a; }
+.ro-ip .ro-valor { color: #4fd8ff; }
+.ro-imax .ro-valor { color: #ff8a65; }
+.ro-imin .ro-valor { color: #b388ff; }
+.ro-ipp .ro-valor, .ro-crest .ro-valor { color: #cfd8dc; }
+.ro-freq .ro-valor { color: #39ff88; }
+.ro-idc .ro-valor { color: #90a4ae; }
+.scope-wrap { position: relative; height: 380px; transition: opacity .3s; }
+.scope-wrap.sin-senal { opacity: .35; }
+.scope-foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: #7fa894; }
+.sc-estado { font-weight: bold; }
+.sc-estado.vivo { color: #39ff88; }
+.sc-estado.congelado { color: #ffc107; }
+.sc-estado.sinsenal { color: #ff5252; }
+.chart-wrap { position: relative; height: 260px; }

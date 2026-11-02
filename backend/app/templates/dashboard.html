@@ -27,15 +27,15 @@
     <!-- Tarjetas de métricas en tiempo real (actualizadas por dashboard.js) -->
     <div class="metrics-grid">
         <div class="metric-card">
-            <h3>Corriente Promedio (Hoy)</h3>
+            <h3>RMS Promedio (Hoy)</h3>
             <p id="stat-prom">0.00 A</p>
         </div>
         <div class="metric-card">
-            <h3>Corriente Máxima (Hoy)</h3>
+            <h3>RMS Máximo (Hoy)</h3>
             <p id="stat-max">0.00 A</p>
         </div>
         <div class="metric-card">
-            <h3>Corriente Mínima (Hoy)</h3>
+            <h3>RMS Mínimo (Hoy)</h3>
             <p id="stat-min">0.00 A</p>
         </div>
         <div class="metric-card">
@@ -44,15 +44,39 @@
         </div>
     </div>
 
-    <div class="grid">
-        <div class="card">
-            <h3>Tendencia Corriente RMS (A)</h3>
-            <canvas id="rmsChart"></canvas>
+    <!-- Osciloscopio: ventana de corriente muestreada por la ESP32 + ADS1115 -->
+    <div class="card scope-card">
+        <div class="scope-head">
+            <h3>🖥️ Osciloscopio · Corriente del motor</h3>
+            <div class="scope-controls">
+                <button type="button" id="btn-congelar" class="scope-btn">⏸ Congelar</button>
+                <button type="button" id="btn-disparo" class="scope-btn activo" aria-pressed="true">Disparo: ON</button>
+            </div>
         </div>
-        <div class="card">
-            <h3>Forma de Onda en Tiempo Real (<span id="wf-count">0</span> muestras)</h3>
-            <canvas id="waveformChart"></canvas>
+
+        <div class="scope-readouts">
+            <div class="ro ro-irms"><span class="ro-label">Irms</span><span class="ro-valor" id="ro-irms">—</span></div>
+            <div class="ro ro-ip"><span class="ro-label">Ip (pico)</span><span class="ro-valor" id="ro-ip">—</span></div>
+            <div class="ro ro-imax"><span class="ro-label">Imax</span><span class="ro-valor" id="ro-imax">—</span></div>
+            <div class="ro ro-imin"><span class="ro-label">Imin</span><span class="ro-valor" id="ro-imin">—</span></div>
+            <div class="ro ro-ipp"><span class="ro-label">Ipp</span><span class="ro-valor" id="ro-ipp">—</span></div>
+            <div class="ro ro-freq"><span class="ro-label">Frecuencia</span><span class="ro-valor" id="ro-freq">—</span></div>
+            <div class="ro ro-crest"><span class="ro-label">Factor cresta</span><span class="ro-valor" id="ro-crest">—</span></div>
+            <div class="ro ro-idc"><span class="ro-label">Offset DC</span><span class="ro-valor" id="ro-idc">—</span></div>
         </div>
+
+        <div class="scope-wrap" id="scope-wrap"><canvas id="scopeChart"></canvas></div>
+
+        <div class="scope-foot">
+            <span id="sc-escala">—</span>
+            <span id="sc-info">—</span>
+            <span id="sc-estado" class="sc-estado">—</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Tendencia Corriente RMS (A)</h3>
+        <div class="chart-wrap"><canvas id="rmsChart"></canvas></div>
     </div>
 
     <div class="card">

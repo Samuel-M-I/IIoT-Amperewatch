@@ -52,8 +52,35 @@ def iniciar_scheduler_reportes():
     threading.Thread(target=_loop, daemon=True, name="reportes-diarios").start()
 
 
+def _armar_osciloscopio(onda):
+    """Datos listos para dibujar: tiempos en ms, corrientes en A y mediciones."""
+    if not onda:
+        return None
+    n = len(onda["samples"])
+    t_us = onda["t_us"] or [k * onda["dt_us"] for k in range(n)]
+    try:
+        edad = (datetime.now() - datetime.strptime(onda["timestamp"], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+    except ValueError:
+        edad = None
+    dt = onda["dt_us"]
+    metricas = dict(onda["metrics"])
+    t_trig = metricas.pop("trigger_us", None)
+    return {
+        "timestamp": onda["timestamp"],
+        "age_s": round(edad, 1) if edad is not None else None,
+        "n": n,
+        "dt_us": round(dt, 2),
+        "fs_real": round(1e6 / dt, 1),                       # frecuencia de muestreo REAL medida
+        "t_ms": [round(t / 1000.0, 3) for t in t_us],
+        "i": [round(v, 3) for v in onda["samples"]],
+        "trigger_ms": round(t_trig / 1000.0, 3) if t_trig is not None else None,
+        "timing": "por muestra" if onda["t_us"] else "periodo fijo",
+        "metrics": metricas,
+    }
+
+
 def obtener_datos_dashboard():
-    """Payload JSON de /api/data: historial RMS, última onda y estadísticas del día."""
+    """Payload JSON de /api/data: historial RMS, osciloscopio y estadísticas del día."""
     historial = [
         {"timestamp": ts, "rms": rms, "estado": estado}
         for ts, rms, estado in db.get_rms_history(Config.HISTORIAL_RMS_GRAFICA)
@@ -64,7 +91,9 @@ def obtener_datos_dashboard():
 
     return {
         "rms_history": historial,
-        "latest_waveform": db.get_latest_waveform(),
+        "scope": _armar_osciloscopio(db.get_latest_waveform()),
+        "umbral_sobrecarga": Config.UMBRAL_SOBRECARGA,
+        "sin_senal_seg": Config.SCOPE_SIN_SENAL_SEG,
         "stats": {
             "i_max": round(i_max, 2) if i_max is not None else 0.0,
             "i_min": round(i_min, 2) if i_min is not None else 0.0,

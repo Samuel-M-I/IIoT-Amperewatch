@@ -28,6 +28,14 @@ def _migrar_esquema_antiguo(cursor):
             cursor.execute(f"DROP TABLE {tabla}")
 
 
+def _agregar_columnas_faltantes(cursor, tabla, columnas):
+    cursor.execute(f"PRAGMA table_info({tabla})")
+    existentes = {fila[1] for fila in cursor.fetchall()}
+    for nombre, tipo in columnas.items():
+        if nombre not in existentes:
+            cursor.execute(f"ALTER TABLE {tabla} ADD COLUMN {nombre} {tipo}")
+
+
 def init_db():
     with db_cursor(commit=True) as cursor:
         _migrar_esquema_antiguo(cursor)
@@ -47,9 +55,18 @@ def init_db():
             CREATE TABLE IF NOT EXISTS waveform_packets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TEXT,
-                samples_json TEXT
+                samples_json TEXT,
+                dt_us REAL,
+                t_json TEXT,
+                metrics_json TEXT
             )
         ''')
+
+        # Fase 3: BDs anteriores no tienen tiempos ni métricas. Se añaden sin perder datos
+        # y se descartan SOLO las ondas viejas (sin tiempos no se pueden interpretar).
+        _agregar_columnas_faltantes(cursor, "waveform_packets",
+                                    {"dt_us": "REAL", "t_json": "TEXT", "metrics_json": "TEXT"})
+        cursor.execute("DELETE FROM waveform_packets WHERE dt_us IS NULL")
 
         # Usuarios del dashboard (la contraseña se guarda SOLO como hash)
         cursor.execute('''
@@ -94,11 +111,15 @@ def insert_rms(timestamp, corriente_rms, estado):
         )
 
 
-def insert_waveform(timestamp, samples):
+def insert_waveform(timestamp, samples, dt_us, t_irregular, metricas):
+    """t_irregular: lista de tiempos (µs) si la ESP32 los midió muestra a muestra; None si es regular."""
     with db_cursor(commit=True) as cursor:
         cursor.execute(
-            "INSERT INTO waveform_packets (timestamp, samples_json) VALUES (?, ?)",
-            (timestamp, json.dumps(samples)),
+            "INSERT INTO waveform_packets (timestamp, samples_json, dt_us, t_json, metrics_json) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (timestamp, json.dumps(samples), dt_us,
+             json.dumps(t_irregular) if t_irregular is not None else None,
+             json.dumps(metricas)),
         )
 
 
@@ -141,10 +162,21 @@ def get_day_summary(fecha):
 
 
 def get_latest_waveform():
+    """Última onda como dict, o None si no hay."""
     with db_cursor() as cursor:
-        cursor.execute("SELECT samples_json FROM waveform_packets ORDER BY id DESC LIMIT 1")
-        row = cursor.fetchone()
-    return json.loads(row[0]) if row else []
+        cursor.execute(
+            "SELECT timestamp, samples_json, dt_us, t_json, metrics_json "
+            "FROM waveform_packets ORDER BY id DESC LIMIT 1")
+        fila = cursor.fetchone()
+    if not fila:
+        return None
+    return {
+        "timestamp": fila[0],
+        "samples": json.loads(fila[1]),
+        "dt_us": fila[2],
+        "t_us": json.loads(fila[3]) if fila[3] else None,
+        "metrics": json.loads(fila[4]) if fila[4] else {},
+    }
 
 
 def count_waveform_packets():

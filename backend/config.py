@@ -25,6 +25,17 @@ class Config:
     WAVEFORM_RETENCION_HORAS = 1      # retención deslizante de ondas crudas
     REPORTE_INTERVALO_SEG = 60        # cada cuánto se recalcula el reporte diario
 
+    # --- Paquetes de forma de onda (ESP32 + ADS1115) ---
+    MQTT_MAX_PAYLOAD_BYTES = 65536    # mensajes más grandes se descartan sin procesar
+    ONDA_MIN_MUESTRAS = 16
+    ONDA_MAX_MUESTRAS = 2048
+    ONDA_DT_MIN_US = 20               # periodo de muestreo plausible: 20 us (50 kSPS)...
+    ONDA_DT_MAX_US = 100000           # ...hasta 100 ms (10 SPS)
+    CORRIENTE_MAX_A = 1000            # cualquier muestra por encima se considera dato corrupto
+    FREQ_MIN_AMP_A = 0.05             # por debajo de esta amplitud pico no se intenta medir frecuencia
+    FREQ_HISTERESIS = 0.10            # banda anti-ruido del detector de cruces (fracción de Ip)
+    SCOPE_SIN_SENAL_SEG = 5           # sin paquetes de onda por más de esto => "sin señal"
+
     # --- Dashboard ---
     HISTORIAL_RMS_GRAFICA = 50        # puntos en la gráfica de tendencia RMS
     REPORTES_EN_TABLA = 5             # filas del histórico de reportes diarios
