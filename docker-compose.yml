@@ -45,9 +45,9 @@ services:
       - ampere-backend
 
   simulador-esp32:
+    profiles: ["sim"]
     build: ./sim
     container_name: simulador_esp32
-    restart: always
     volumes:
       - ./certs/ca.crt:/certs/ca.crt:ro
     environment:
@@ -59,3 +59,12 @@ services:
     depends_on:
       - mqtt-broker
       - ampere-backend
+  ntp:
+    image: cturra/ntp:latest
+    container_name: ntp_server
+    restart: always
+    ports:
+      - "123:123/udp"
+    environment:
+      - NTP_SERVERS=pool.ntp.org,time.google.com
+      - LOG_LEVEL=0
