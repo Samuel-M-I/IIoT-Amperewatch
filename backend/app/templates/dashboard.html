@@ -65,6 +65,17 @@
         <div class="scope-head">
             <h3>🖥️ Osciloscopio · Corriente del motor</h3>
             <div class="scope-controls">
+                <label class="scope-sel" id="lbl-tiempo">Base de tiempo
+                    <select id="sel-tiempo">
+                        <option value="auto">Auto</option>
+                        <option value="1">1 ms/div</option>
+                        <option value="2">2 ms/div</option>
+                        <option value="5">5 ms/div</option>
+                        <option value="10">10 ms/div</option>
+                        <option value="20">20 ms/div</option>
+                        <option value="50">50 ms/div</option>
+                    </select>
+                </label>
                 <button type="button" id="btn-ocultar" class="scope-btn" aria-expanded="true" aria-controls="scope-body">🙈 Ocultar</button>
                 <button type="button" id="btn-congelar" class="scope-btn">⏸ Congelar</button>
                 <button type="button" id="btn-disparo" class="scope-btn activo" aria-pressed="true">Disparo: ON</button>

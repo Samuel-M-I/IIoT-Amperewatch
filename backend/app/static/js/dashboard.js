@@ -87,6 +87,7 @@ let disparoActivo = true;
 let scopeActual = null;      // último paquete recibido
 let scopeMostrado = null;    // lo que está dibujado (distinto si se congela)
 let sinSenalSeg = 5;
+let baseTiempoMs = null;    // ms por división fijados por el usuario; null = automático
 
 // Paso "redondo" 1-2-5 × 10^k, como las escalas de un osciloscopio
 function pasoRedondo(minimo) {
@@ -130,16 +131,19 @@ function dibujarOsciloscopio(scope) {
     for (let k = 0; k < scope.t_ms.length; k++) {
         if (scope.t_ms[k] >= t0) puntos.push({ x: scope.t_ms[k] - t0, y: scope.i[k], k: k });
     }
-    const ventanaMs = puntos.length > 1 ? puntos[puntos.length - 1].x : 1;
+    const ventanaCapturaMs = puntos.length > 1 ? puntos[puntos.length - 1].x : 1;
+    // Base de tiempo: automática (la captura llena la pantalla) o fija (ms/div elegidos)
+    const msPorDiv = baseTiempoMs === null ? ventanaCapturaMs / DIV_X : baseTiempoMs;
+    const ventanaMs = msPorDiv * DIV_X;
 
     const m = scope.metrics;
     const picoAbs = Math.max(Math.abs(m.imax), Math.abs(m.imin), 0.05);
     const aPorDiv = pasoRedondo(picoAbs * 1.1 / (DIV_Y / 2));
-    const msPorDiv = ventanaMs / DIV_X;
 
+    const visibles = puntos.filter(p => p.x <= ventanaMs);      // lo que cabe en la pantalla
     const ds = scopeChart.data.datasets[0];
-    ds.data = puntos;
-    ds.pointRadius = puntos.length <= 200 ? 2 : 0;     // se ven los instantes reales de muestreo
+    ds.data = visibles;
+    ds.pointRadius = visibles.length <= 200 ? 2 : 0;     // se ven los instantes reales de muestreo
 
     const ex = scopeChart.options.scales.x, ey = scopeChart.options.scales.y;
     ex.min = 0; ex.max = ventanaMs;
@@ -151,7 +155,7 @@ function dibujarOsciloscopio(scope) {
     scopeChart.update();
 
     pintarLecturas(m);
-    $('sc-escala').textContent = aPorDiv + ' A/div · ' + msPorDiv.toFixed(1) + ' ms/div';
+    $('sc-escala').textContent = aPorDiv + ' A/div · ' + msPorDiv.toFixed(1) + ' ms/div' + (baseTiempoMs === null ? ' (auto)' : '');
     $('sc-info').textContent = scope.n + ' muestras · ' + scope.fs_real.toFixed(0) + ' SPS reales · tiempos ' + scope.timing +
         (usarDisparo ? ' · disparo ↗' : '');
 }
@@ -193,12 +197,32 @@ $('btn-disparo').addEventListener('click', () => {
     dibujarOsciloscopio(scopeMostrado);
 });
 
+// ------------------------------------------------------ base de tiempo (ms/div)
+const CLAVE_BASE_TIEMPO = 'scopeBaseTiempo';
+
+function aplicarBaseTiempo(valor) {
+    baseTiempoMs = (valor === 'auto' || !(parseFloat(valor) > 0)) ? null : parseFloat(valor);
+    $('sel-tiempo').value = baseTiempoMs === null ? 'auto' : String(baseTiempoMs);
+    dibujarOsciloscopio(scopeMostrado);
+}
+
+$('sel-tiempo').addEventListener('change', ev => {
+    aplicarBaseTiempo(ev.target.value);
+    try { localStorage.setItem(CLAVE_BASE_TIEMPO, ev.target.value); } catch (e) { /* sin almacenamiento */ }
+});
+
+try {
+    const guardada = localStorage.getItem(CLAVE_BASE_TIEMPO);
+    if (guardada) aplicarBaseTiempo(guardada);
+} catch (e) { /* sin almacenamiento */ }
+
 // ------------------------------------------------- mostrar / ocultar osciloscopio
 const CLAVE_SCOPE_OCULTO = 'scopeOculto';
 
 function aplicarVisibilidadScope(oculto) {
     $('scope-body').hidden = oculto;
     $('btn-congelar').hidden = oculto;
+    $('lbl-tiempo').hidden = oculto;
     $('btn-disparo').hidden = oculto;
     const b = $('btn-ocultar');
     b.textContent = oculto ? '👁 Mostrar' : '🙈 Ocultar';

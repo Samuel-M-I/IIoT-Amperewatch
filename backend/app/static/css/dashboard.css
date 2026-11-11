@@ -71,3 +71,8 @@ th { background: #007bff; color: white; }
 .umbral-msg.ok { color: #198754; }
 .umbral-msg.error { color: #dc3545; }
 .umbral-nota { margin: 10px 0 0; font-size: 13px; color: #666; }
+
+/* --- Selector de base de tiempo del osciloscopio --- */
+.scope-sel { display: inline-flex; align-items: center; gap: 6px; color: #7fa894; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
+.scope-sel[hidden] { display: none; }
+.scope-sel select { background: #12281d; color: #8cf0b0; border: 1px solid #2b5a40; padding: 5px 8px; border-radius: 4px; font-family: inherit; font-size: 13px; cursor: pointer; }
