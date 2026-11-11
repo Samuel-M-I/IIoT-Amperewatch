@@ -58,14 +58,16 @@ def init_db():
                 samples_json TEXT,
                 dt_us REAL,
                 t_json TEXT,
-                metrics_json TEXT
+                metrics_json TEXT,
+                spectrum_json TEXT
             )
         ''')
 
         # Fase 3: BDs anteriores no tienen tiempos ni métricas. Se añaden sin perder datos
         # y se descartan SOLO las ondas viejas (sin tiempos no se pueden interpretar).
         _agregar_columnas_faltantes(cursor, "waveform_packets",
-                                    {"dt_us": "REAL", "t_json": "TEXT", "metrics_json": "TEXT"})
+                                    {"dt_us": "REAL", "t_json": "TEXT", "metrics_json": "TEXT",
+                                     "spectrum_json": "TEXT"})
         cursor.execute("DELETE FROM waveform_packets WHERE dt_us IS NULL")
 
         # Usuarios del dashboard (la contraseña se guarda SOLO como hash)
@@ -120,15 +122,18 @@ def insert_rms(timestamp, corriente_rms, estado):
         )
 
 
-def insert_waveform(timestamp, samples, dt_us, t_irregular, metricas):
-    """t_irregular: lista de tiempos (µs) si la ESP32 los midió muestra a muestra; None si es regular."""
+def insert_waveform(timestamp, samples, dt_us, t_irregular, metricas, espectro=None):
+    """t_irregular: lista de tiempos (µs) si la ESP32 los midió muestra a muestra; None si es regular.
+    espectro: resultado del análisis FFT (dict) o {"disponible": False, "motivo": ...}. Vive y muere
+    con su onda: la retención deslizante de `waveform_packets` también lo limpia."""
     with db_cursor(commit=True) as cursor:
         cursor.execute(
-            "INSERT INTO waveform_packets (timestamp, samples_json, dt_us, t_json, metrics_json) "
-            "VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO waveform_packets (timestamp, samples_json, dt_us, t_json, metrics_json, spectrum_json) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
             (timestamp, json.dumps(samples), dt_us,
              json.dumps(t_irregular) if t_irregular is not None else None,
-             json.dumps(metricas)),
+             json.dumps(metricas),
+             json.dumps(espectro, separators=(",", ":")) if espectro is not None else None),
         )
 
 
@@ -203,6 +208,17 @@ def get_latest_waveform():
         "t_us": json.loads(fila[3]) if fila[3] else None,
         "metrics": json.loads(fila[4]) if fila[4] else {},
     }
+
+
+def get_latest_spectrum():
+    """(timestamp, espectro) de la última onda recibida. `espectro` es None si esa onda no tiene análisis
+    (llegó antes de existir esta función). Devuelve None si aún no hay ondas."""
+    with db_cursor() as cursor:
+        cursor.execute("SELECT timestamp, spectrum_json FROM waveform_packets ORDER BY id DESC LIMIT 1")
+        fila = cursor.fetchone()
+    if not fila:
+        return None
+    return fila[0], (json.loads(fila[1]) if fila[1] else None)
 
 
 def count_waveform_packets():

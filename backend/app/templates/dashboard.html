@@ -104,6 +104,32 @@
         </div>
     </div>
 
+    <!-- Análisis espectral (FFT de la última onda; lo calcula el backend con numpy) -->
+    <div class="card scope-card">
+        <div class="scope-head">
+            <h3>📊 Análisis espectral · FFT de la corriente</h3>
+            <div class="scope-controls">
+                <button type="button" id="btn-vista-arm" class="scope-btn activo" aria-pressed="true">Armónicos</button>
+                <button type="button" id="btn-vista-esp" class="scope-btn" aria-pressed="false">Espectro completo</button>
+            </div>
+        </div>
+
+        <div class="scope-readouts">
+            <div class="ro"><span class="ro-label">THD</span><span class="ro-valor" id="sp-thd">—</span></div>
+            <div class="ro ro-freq"><span class="ro-label">Fundamental</span><span class="ro-valor" id="sp-f1">—</span></div>
+            <div class="ro ro-irms"><span class="ro-label">I1 (rms)</span><span class="ro-valor" id="sp-i1">—</span></div>
+            <div class="ro ro-ip"><span class="ro-label">Armónicos medidos</span><span class="ro-valor" id="sp-nh">—</span></div>
+            <div class="ro ro-idc"><span class="ro-label">Resolución</span><span class="ro-valor" id="sp-res">—</span></div>
+        </div>
+
+        <div class="spec-wrap" id="spec-wrap"><canvas id="specChart"></canvas></div>
+
+        <div class="scope-foot">
+            <span id="sp-info">—</span>
+            <span id="sp-estado" class="sc-estado">—</span>
+        </div>
+    </div>
+
     <div class="card">
         <h3>Tendencia Corriente RMS (A)</h3>
         <div class="chart-wrap"><canvas id="rmsChart"></canvas></div>

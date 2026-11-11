@@ -76,3 +76,10 @@ th { background: #007bff; color: white; }
 .scope-sel { display: inline-flex; align-items: center; gap: 6px; color: #7fa894; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
 .scope-sel[hidden] { display: none; }
 .scope-sel select { background: #12281d; color: #8cf0b0; border: 1px solid #2b5a40; padding: 5px 8px; border-radius: 4px; font-family: inherit; font-size: 13px; cursor: pointer; }
+
+/* --- Análisis espectral --- */
+.spec-wrap { position: relative; height: 340px; transition: opacity .3s; }
+.spec-wrap.sin-senal { opacity: .35; }
+.ro-valor.thd-bajo { color: #39ff88; }
+.ro-valor.thd-moderado { color: #ffd54a; }
+.ro-valor.thd-alto { color: #ff5252; }

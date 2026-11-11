@@ -5,6 +5,7 @@ from paho.mqtt import client as mqtt_client
 from config import Config
 from app import database as db
 from app.analysis import PaqueteInvalido, analizar_onda, parsear_paquete_onda
+from app.spectrum import EspectroNoDisponible, analizar_espectro
 from app.services import timestamp_actual, clasificar_estado, limpiar_datos_antiguos
 
 MOTIVOS_RC = {
@@ -42,7 +43,14 @@ def _procesar_rms(datos):
 def _procesar_onda(datos):
     onda = parsear_paquete_onda(datos)
     metricas = analizar_onda(onda.muestras, onda.t_us)
-    db.insert_waveform(timestamp_actual(), onda.muestras, onda.dt_us, onda.t_irregular, metricas)
+    try:
+        espectro = analizar_espectro(onda.muestras, onda.t_us)
+    except EspectroNoDisponible as e:          # ventana corta, sin señal...: se guarda el motivo
+        espectro = {"disponible": False, "motivo": str(e)}
+    except Exception as e:                     # un fallo del análisis nunca debe perder la onda
+        print(f"Error en el análisis espectral: {e}")
+        espectro = {"disponible": False, "motivo": "error interno en el análisis espectral"}
+    db.insert_waveform(timestamp_actual(), onda.muestras, onda.dt_us, onda.t_irregular, metricas, espectro)
     limpiar_datos_antiguos()
 
 

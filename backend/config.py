@@ -37,6 +37,17 @@ class Config:
     FREQ_HISTERESIS = 0.10            # banda anti-ruido del detector de cruces (fracción de Ip)
     SCOPE_SIN_SENAL_SEG = 5           # sin paquetes de onda por más de esto => "sin señal"
 
+    # --- Análisis espectral (FFT, app/spectrum.py) ---
+    ESPECTRO_FUND_MIN_HZ = 20         # banda donde se busca la fundamental (red de 50/60 Hz y motores con variador)
+    ESPECTRO_FUND_MAX_HZ = 100
+    ESPECTRO_MIN_CICLOS = 4           # ciclos mínimos en la ventana; con menos, las fugas espectrales falsean los armónicos
+    ESPECTRO_MAX_ARMONICO = 15        # hasta qué armónico entra en el THD (siempre que la fs lo permita)
+    ESPECTRO_NYQUIST_MARGEN = 0.9     # solo se miden armónicos por debajo de 0.9 x Nyquist (cerca de Nyquist hay aliasing)
+    ESPECTRO_ZERO_PAD = 8             # relleno con ceros (x8): afina la lectura de picos sin necesitar más muestras
+    ESPECTRO_MAX_BARRAS = 128         # barras máximas del espectro completo (se agrupan conservando los picos)
+    ESPECTRO_THD_MODERADO_PCT = 5.0   # THD >= esto => nivel "moderado" (referencia orientativa de color en el dashboard)
+    ESPECTRO_THD_ALTO_PCT = 10.0      # THD >= esto => nivel "alto"
+
     # --- Dashboard ---
     HISTORIAL_RMS_GRAFICA = 50        # puntos en la gráfica de tendencia RMS
     REPORTES_EN_TABLA = 5             # filas del histórico de reportes diarios

@@ -3,7 +3,8 @@ from flask import Blueprint, jsonify, render_template, request
 from config import Config
 from app import database as db
 from app.auth import csrf_valido
-from app.services import AjusteInvalido, guardar_umbral, obtener_datos_dashboard, obtener_umbral
+from app.services import (AjusteInvalido, guardar_umbral, obtener_datos_dashboard,
+                          obtener_espectro, obtener_umbral)
 
 main_bp = Blueprint("main", __name__)
 
@@ -11,6 +12,12 @@ main_bp = Blueprint("main", __name__)
 @main_bp.route("/api/data")
 def api_data():
     return jsonify(obtener_datos_dashboard())
+
+
+@main_bp.route("/api/espectro")
+def api_espectro():
+    """Análisis espectral (FFT) de la última onda: fundamental, armónicos, THD y espectro para graficar."""
+    return jsonify(obtener_espectro())
 
 
 @main_bp.route("/api/umbral", methods=["POST"])

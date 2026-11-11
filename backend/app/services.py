@@ -83,16 +83,21 @@ def iniciar_scheduler_reportes():
     threading.Thread(target=_loop, daemon=True, name="reportes-diarios").start()
 
 
+def _edad_segundos(timestamp):
+    """Segundos transcurridos desde un timestamp del servidor (None si no se puede interpretar)."""
+    try:
+        return (datetime.now() - datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+    except (TypeError, ValueError):
+        return None
+
+
 def _armar_osciloscopio(onda):
     """Datos listos para dibujar: tiempos en ms, corrientes en A y mediciones."""
     if not onda:
         return None
     n = len(onda["samples"])
     t_us = onda["t_us"] or [k * onda["dt_us"] for k in range(n)]
-    try:
-        edad = (datetime.now() - datetime.strptime(onda["timestamp"], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
-    except ValueError:
-        edad = None
+    edad = _edad_segundos(onda["timestamp"])
     dt = onda["dt_us"]
     metricas = dict(onda["metrics"])
     t_trig = metricas.pop("trigger_us", None)
@@ -108,6 +113,25 @@ def _armar_osciloscopio(onda):
         "timing": "por muestra" if onda["t_us"] else "periodo fijo",
         "metrics": metricas,
     }
+
+
+def obtener_espectro():
+    """Payload JSON de /api/espectro: análisis FFT de la última onda recibida.
+
+    Siempre trae "disponible", "timestamp", "age_s" y "sin_senal_seg". Si disponible es true, además:
+    fundamental, thd_pct, thd_nivel, armonicos[], espectro{freq_hz[], rms_a[]} y muestreo{}.
+    Si es false, "motivo" explica por qué.
+    """
+    ultimo = db.get_latest_spectrum()
+    if ultimo is None:
+        resultado, ts = {"disponible": False, "motivo": "Aún no llegan ondas de la ESP32"}, None
+    else:
+        ts, esp = ultimo
+        resultado = dict(esp) if esp else {"disponible": False, "motivo": "esta onda no tiene análisis espectral"}
+    edad = _edad_segundos(ts) if ts else None
+    resultado.update(timestamp=ts, age_s=round(edad, 1) if edad is not None else None,
+                     sin_senal_seg=Config.SCOPE_SIN_SENAL_SEG)
+    return resultado
 
 
 def obtener_datos_dashboard():

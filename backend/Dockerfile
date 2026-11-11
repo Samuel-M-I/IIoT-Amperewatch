@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Copiar e instalar dependencias primero (para aprovechar el caché de Docker)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --default-timeout=100 --retries=5 -r requirements.txt
 
 # Copiar el resto del código modularizado del backend
 COPY . .

@@ -216,6 +216,143 @@ try {
     if (guardada) aplicarBaseTiempo(guardada);
 } catch (e) { /* sin almacenamiento */ }
 
+// ------------------------------------------------------- análisis espectral (FFT)
+// El backend hace toda la matemática (numpy); aquí solo se dibuja lo que trae /api/espectro.
+const COLOR_FUND = '#4fd8ff';
+const COLOR_ARM = '#ffb74d';
+const COLOR_BIN = '#2e8b5f';
+
+let vistaEspectro = 'armonicos';     // 'armonicos' | 'completo'
+let espectroActual = null;           // último JSON recibido
+let espectroDibujado = null;         // clave de lo dibujado, para no redibujar sin cambios
+let infoBarras = [];                 // texto de los tooltips, una entrada por barra
+
+const specChart = new Chart($('specChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0,
+                                     categoryPercentage: 1.0, barPercentage: 0.85 }] },
+    options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    title: items => infoBarras[items[0].dataIndex] ? infoBarras[items[0].dataIndex].titulo : '',
+                    label: item => infoBarras[item.dataIndex] ? infoBarras[item.dataIndex].detalle : ''
+                }
+            }
+        },
+        scales: {
+            x: Object.assign(ejeScope('Armónico'), { grid: { display: false } }),
+            y: Object.assign({ beginAtZero: true }, ejeScope('Amplitud (A rms)'))
+        }
+    },
+    plugins: [fondoScope]
+});
+
+function limpiarEspectro(motivo) {
+    specChart.data.labels = [];
+    specChart.data.datasets[0].data = [];
+    infoBarras = [];
+    specChart.update();
+    ['sp-thd', 'sp-f1', 'sp-i1', 'sp-nh', 'sp-res'].forEach(id => { $(id).textContent = '—'; });
+    $('sp-thd').className = 'ro-valor';
+    $('sp-info').textContent = motivo;
+}
+
+function dibujarEspectro(esp) {
+    if (!esp || !esp.disponible) {
+        limpiarEspectro(esp && esp.motivo ? esp.motivo : 'Aún no llegan ondas de la ESP32');
+        return;
+    }
+    const ds = specChart.data.datasets[0];
+    const ex = specChart.options.scales.x;
+
+    if (vistaEspectro === 'armonicos') {
+        specChart.data.labels = esp.armonicos.map(a => String(a.orden));
+        ds.data = esp.armonicos.map(a => a.rms_a);
+        ds.backgroundColor = esp.armonicos.map(a => a.orden === 1 ? COLOR_FUND : COLOR_ARM);
+        infoBarras = esp.armonicos.map(a => ({
+            titulo: (a.orden === 1 ? 'Fundamental' : 'Armónico ' + a.orden) + ' · ' + a.freq_hz.toFixed(1) + ' Hz',
+            detalle: a.rms_a.toFixed(3) + ' A rms' + (a.orden === 1 ? '' : ' · ' + a.pct_fundamental.toFixed(2) + ' % de la fundamental')
+        }));
+        ex.title.text = 'Orden del armónico (1 = fundamental)';
+        ex.ticks.autoSkip = false;
+    } else {
+        const f = esp.espectro.freq_hz;
+        specChart.data.labels = f.map(v => v.toFixed(0));
+        ds.data = esp.espectro.rms_a;
+        ds.backgroundColor = f.map(() => COLOR_BIN);
+        // Resalta la barra más cercana a cada armónico (la fundamental en otro color)
+        esp.armonicos.forEach(a => {
+            let mejor = 0;
+            f.forEach((v, i) => { if (Math.abs(v - a.freq_hz) < Math.abs(f[mejor] - a.freq_hz)) mejor = i; });
+            ds.backgroundColor[mejor] = a.orden === 1 ? COLOR_FUND : COLOR_ARM;
+        });
+        infoBarras = f.map((v, i) => ({
+            titulo: v.toFixed(1) + ' Hz',
+            detalle: esp.espectro.rms_a[i].toFixed(3) + ' A rms'
+        }));
+        ex.title.text = 'Frecuencia (Hz)';
+        ex.ticks.autoSkip = true;
+        ex.ticks.maxTicksLimit = 14;
+        ex.ticks.maxRotation = 0;
+    }
+    specChart.update();
+
+    $('sp-thd').textContent = esp.thd_pct.toFixed(2) + ' %';
+    $('sp-thd').className = 'ro-valor thd-' + esp.thd_nivel;
+    $('sp-f1').textContent = fmt(esp.fundamental.freq_hz, 2, 'Hz');
+    $('sp-i1').textContent = fmt(esp.fundamental.rms_a, 2, 'A');
+    $('sp-nh').textContent = esp.muestreo.armonicos_analizados;
+    $('sp-res').textContent = fmt(esp.muestreo.resolucion_hz, 1, 'Hz');
+    $('sp-info').textContent = esp.muestreo.n + ' muestras · ' + esp.muestreo.fs_hz.toFixed(0) + ' SPS · ' +
+        esp.muestreo.ciclos + ' ciclos · armónicos hasta ' + esp.muestreo.armonicos_hasta_hz.toFixed(0) + ' Hz';
+}
+
+function pintarEstadoEspectro() {
+    const el = $('sp-estado');
+    const edad = espectroActual ? espectroActual.age_s : null;
+    const sinSenal = edad === null || edad === undefined || edad > sinSenalSeg;
+    $('spec-wrap').classList.toggle('sin-senal', sinSenal);
+    el.className = 'sc-estado ' + (sinSenal ? 'sinsenal' : 'vivo');
+    el.textContent = sinSenal
+        ? (edad === null || edad === undefined ? '⚠ SIN DATOS' : '⚠ SIN SEÑAL (hace ' + Math.round(edad) + ' s)')
+        : '● EN VIVO · captura hace ' + edad.toFixed(1) + ' s';
+}
+
+function cambiarVistaEspectro(vista) {
+    vistaEspectro = vista;
+    $('btn-vista-arm').classList.toggle('activo', vista === 'armonicos');
+    $('btn-vista-esp').classList.toggle('activo', vista === 'completo');
+    $('btn-vista-arm').setAttribute('aria-pressed', String(vista === 'armonicos'));
+    $('btn-vista-esp').setAttribute('aria-pressed', String(vista === 'completo'));
+    espectroDibujado = null;
+    dibujarEspectro(espectroActual);
+}
+$('btn-vista-arm').addEventListener('click', () => cambiarVistaEspectro('armonicos'));
+$('btn-vista-esp').addEventListener('click', () => cambiarVistaEspectro('completo'));
+
+function actualizarEspectro() {
+    fetch('/api/espectro')
+        .then(resp => {
+            if (resp.status === 401) { window.location.href = '/login'; throw new Error('Sesión expirada'); }
+            return resp.json();
+        })
+        .then(esp => {
+            espectroActual = esp;
+            const clave = vistaEspectro + '|' + esp.timestamp + '|' + esp.disponible;
+            if (clave !== espectroDibujado) { espectroDibujado = clave; dibujarEspectro(esp); }
+            pintarEstadoEspectro();
+        })
+        .catch(err => {
+            if (err.message !== 'Sesión expirada') $('sp-estado').textContent = '⚠ Sin respuesta del servidor';
+        });
+}
+
+actualizarEspectro();
+setInterval(actualizarEspectro, REFRESH_MS);
+
 // ------------------------------------------------- mostrar / ocultar osciloscopio
 const CLAVE_SCOPE_OCULTO = 'scopeOculto';
 
