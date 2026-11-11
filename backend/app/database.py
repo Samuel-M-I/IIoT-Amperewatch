@@ -88,6 +88,15 @@ def init_db():
             )
         ''')
 
+        # Ajustes configurables desde el dashboard (clave -> valor)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT
+            )
+        ''')
+
         # Reportes diarios consolidados (Objetivo 4)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS daily_reports (
@@ -137,7 +146,24 @@ def upsert_daily_report(fecha, i_max, i_min, i_prom, total_sobrecargas, consumo_
         ''', (fecha, i_max, i_min, i_prom, total_sobrecargas, consumo_kwh))
 
 
+def set_setting(key, value, updated_at):
+    with db_cursor(commit=True) as cursor:
+        cursor.execute(
+            "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+            (key, str(value), updated_at),
+        )
+
+
 # ----------------------------------------------------------------- lectura
+def get_setting(key):
+    """Valor (texto) de un ajuste, o None si nunca se configuró."""
+    with db_cursor() as cursor:
+        cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
+        fila = cursor.fetchone()
+    return fila[0] if fila else None
+
+
 def get_rms_history(limit):
     """Devuelve las últimas `limit` lecturas en orden cronológico."""
     with db_cursor() as cursor:

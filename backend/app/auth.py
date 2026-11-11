@@ -84,8 +84,9 @@ def csrf_token():
     return session["csrf"]
 
 
-def _csrf_valido():
-    enviado = request.form.get("csrf_token", "")
+def csrf_valido():
+    """Acepta el token en el formulario (login/logout) o en la cabecera X-CSRF-Token (fetch)."""
+    enviado = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token", "")
     esperado = session.get("csrf", "")
     return bool(esperado) and secrets.compare_digest(enviado, esperado)
 
@@ -124,7 +125,7 @@ def login():
             return redirect(url_for("main.index"))
         return render_template("login.html")
 
-    if not _csrf_valido():
+    if not csrf_valido():
         abort(400)
 
     ip = request.remote_addr or "desconocida"
@@ -161,7 +162,7 @@ def login():
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
-    if not _csrf_valido():
+    if not csrf_valido():
         abort(400)
     if session.get("sid"):
         db.delete_session(session["sid"])      # revoca la sesión en el servidor

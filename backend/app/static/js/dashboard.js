@@ -192,6 +192,46 @@ $('btn-disparo').addEventListener('click', () => {
     dibujarOsciloscopio(scopeMostrado);
 });
 
+// ------------------------------------------------------- umbral de sobrecarga
+const inputUmbral = $('input-umbral');
+const msgUmbral = $('umbral-msg');
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+let umbralEditado = false;      // el usuario está escribiendo: no pisar su valor con el del servidor
+
+function mensajeUmbral(texto, clase) {
+    msgUmbral.textContent = texto;
+    msgUmbral.className = 'umbral-msg' + (clase ? ' ' + clase : '');
+}
+
+inputUmbral.addEventListener('input', () => { umbralEditado = true; mensajeUmbral(''); });
+
+$('form-umbral').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const valor = parseFloat(inputUmbral.value.replace(',', '.'));
+    if (!Number.isFinite(valor)) { mensajeUmbral('Escribe un número válido.', 'error'); return; }
+
+    const btn = $('btn-umbral');
+    btn.disabled = true;
+    try {
+        const resp = await fetch('/api/umbral', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            body: JSON.stringify({ umbral: valor })
+        });
+        if (resp.status === 401) { window.location.href = '/login'; return; }
+        const data = await resp.json();
+        if (!resp.ok) { mensajeUmbral(data.error || 'No se pudo guardar.', 'error'); return; }
+        umbralEditado = false;
+        inputUmbral.value = data.umbral_sobrecarga;
+        mensajeUmbral('✔ Guardado', 'ok');
+        actualizarDatos();      // refresca ya la línea roja de la gráfica
+    } catch (err) {
+        mensajeUmbral('Error de red: ' + err.message, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+});
+
 // ------------------------------------------------------------ ciclo de datos
 function actualizarDatos() {
     fetch('/api/data')
@@ -210,6 +250,12 @@ function actualizarDatos() {
             rmsChart.data.datasets[0].data = data.rms_history.map(item => item.rms);
             rmsChart.data.datasets[1].data = data.rms_history.map(() => data.umbral_sobrecarga);
             rmsChart.update();
+
+            // Umbral vigente en el servidor
+            $('umbral-actual').textContent = data.umbral_sobrecarga + ' A';
+            if (!umbralEditado && document.activeElement !== inputUmbral) {
+                inputUmbral.value = data.umbral_sobrecarga;
+            }
 
             // Osciloscopio (si está congelado se conserva la imagen)
             scopeActual = data.scope;

@@ -60,3 +60,14 @@ th { background: #007bff; color: white; }
 .sc-estado.congelado { color: #ffc107; }
 .sc-estado.sinsenal { color: #ff5252; }
 .chart-wrap { position: relative; height: 260px; }
+
+/* --- Configuración del umbral --- */
+.umbral-form { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 14px; color: #444; }
+.umbral-form input[type=number] { width: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; }
+.umbral-form button { background: #007bff; color: white; border: 0; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+.umbral-form button:hover { background: #0063cc; }
+.umbral-form button:disabled { background: #9bbfe6; cursor: wait; }
+.umbral-msg { font-weight: bold; }
+.umbral-msg.ok { color: #198754; }
+.umbral-msg.error { color: #dc3545; }
+.umbral-nota { margin: 10px 0 0; font-size: 13px; color: #666; }

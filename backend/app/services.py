@@ -1,4 +1,5 @@
 """Lógica de negocio: clasificación, retención, reportes y datos del dashboard."""
+import math
 import threading
 import time
 from datetime import datetime, timedelta
@@ -11,8 +12,38 @@ def timestamp_actual():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
 
+CLAVE_UMBRAL = "umbral_sobrecarga"
+
+
+class AjusteInvalido(ValueError):
+    """El valor recibido para un ajuste no es aceptable."""
+
+
+def obtener_umbral():
+    """Umbral de sobrecarga vigente (A): el guardado desde el dashboard o, si no hay, el de config."""
+    try:
+        valor = float(db.get_setting(CLAVE_UMBRAL))
+        if math.isfinite(valor) and valor > 0:
+            return valor
+    except (TypeError, ValueError):
+        pass
+    return Config.UMBRAL_SOBRECARGA
+
+
+def guardar_umbral(valor):
+    """Valida y guarda el nuevo umbral. Devuelve el valor guardado; lanza AjusteInvalido si no sirve."""
+    if isinstance(valor, bool) or not isinstance(valor, (int, float)) or not math.isfinite(valor):
+        raise AjusteInvalido("El umbral debe ser un número.")
+    if not (Config.UMBRAL_MIN_A <= valor <= Config.CORRIENTE_MAX_A):
+        raise AjusteInvalido(
+            f"El umbral debe estar entre {Config.UMBRAL_MIN_A} y {Config.CORRIENTE_MAX_A} A.")
+    valor = round(float(valor), 2)
+    db.set_setting(CLAVE_UMBRAL, valor, timestamp_actual())
+    return valor
+
+
 def clasificar_estado(corriente_rms):
-    return "NORMAL" if corriente_rms < Config.UMBRAL_SOBRECARGA else "ALERTA_SOBRECARGA"
+    return "NORMAL" if corriente_rms < obtener_umbral() else "ALERTA_SOBRECARGA"
 
 
 def limpiar_datos_antiguos():
@@ -92,7 +123,7 @@ def obtener_datos_dashboard():
     return {
         "rms_history": historial,
         "scope": _armar_osciloscopio(db.get_latest_waveform()),
-        "umbral_sobrecarga": Config.UMBRAL_SOBRECARGA,
+        "umbral_sobrecarga": obtener_umbral(),
         "sin_senal_seg": Config.SCOPE_SIN_SENAL_SEG,
         "stats": {
             "i_max": round(i_max, 2) if i_max is not None else 0.0,

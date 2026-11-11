@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>AmpereWatch IIoT Dashboard</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="{{ url_for('static', filename='js/vendor/chart.umd.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
@@ -42,6 +43,21 @@
             <h3>Eventos Sobrecarga</h3>
             <p id="stat-overload" class="danger">0</p>
         </div>
+    </div>
+
+    <!-- Configuración del umbral de sobrecarga (se guarda en el servidor) -->
+    <div class="card">
+        <h3>⚙️ Umbral de sobrecarga</h3>
+        <form id="form-umbral" class="umbral-form" novalidate>
+            <label for="input-umbral">Alerta cuando la corriente RMS sea ≥</label>
+            <input type="number" id="input-umbral" name="umbral" value="{{ umbral }}"
+                   min="{{ umbral_min }}" max="{{ umbral_max }}" step="0.1" required>
+            <span>A</span>
+            <button type="submit" id="btn-umbral">Guardar</button>
+            <span id="umbral-msg" class="umbral-msg" role="status"></span>
+        </form>
+        <p class="umbral-nota">Vigente: <strong id="umbral-actual">{{ umbral }} A</strong>.
+            El cambio aplica a las lecturas nuevas; las ya registradas conservan su estado.</p>
     </div>
 
     <!-- Osciloscopio: ventana de corriente muestreada por la ESP32 + ADS1115 -->

@@ -19,7 +19,8 @@ class Config:
     TOPIC_WAVEFORM = "industrial/amperewatch/waveform"
 
     # --- Reglas de negocio ---
-    UMBRAL_SOBRECARGA = 15.0          # A: por encima de esto => ALERTA_SOBRECARGA
+    UMBRAL_SOBRECARGA = 15.0          # A: valor POR DEFECTO; se cambia desde el dashboard (queda en la BD)
+    UMBRAL_MIN_A = 0.1                # A: rango permitido al configurar el umbral (el máximo es CORRIENTE_MAX_A)
     VOLTAJE_NOMINAL = 120             # V: para el consumo estimado en kWh
     RMS_MUESTRAS_POR_SEGUNDO = 1      # frecuencia a la que llegan lecturas RMS
     WAVEFORM_RETENCION_HORAS = 1      # retención deslizante de ondas crudas
