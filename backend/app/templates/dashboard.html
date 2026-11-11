@@ -65,11 +65,13 @@
         <div class="scope-head">
             <h3>🖥️ Osciloscopio · Corriente del motor</h3>
             <div class="scope-controls">
+                <button type="button" id="btn-ocultar" class="scope-btn" aria-expanded="true" aria-controls="scope-body">🙈 Ocultar</button>
                 <button type="button" id="btn-congelar" class="scope-btn">⏸ Congelar</button>
                 <button type="button" id="btn-disparo" class="scope-btn activo" aria-pressed="true">Disparo: ON</button>
             </div>
         </div>
 
+        <div id="scope-body">
         <div class="scope-readouts">
             <div class="ro ro-irms"><span class="ro-label">Irms</span><span class="ro-valor" id="ro-irms">—</span></div>
             <div class="ro ro-ip"><span class="ro-label">Ip (pico)</span><span class="ro-valor" id="ro-ip">—</span></div>
@@ -87,6 +89,7 @@
             <span id="sc-escala">—</span>
             <span id="sc-info">—</span>
             <span id="sc-estado" class="sc-estado">—</span>
+        </div>
         </div>
     </div>
 

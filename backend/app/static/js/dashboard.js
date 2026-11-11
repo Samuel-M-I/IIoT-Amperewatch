@@ -111,6 +111,7 @@ function pintarLecturas(m) {
 }
 
 function dibujarOsciloscopio(scope) {
+    if ($('scope-body').hidden) return;
     if (!scope) {
         scopeChart.data.datasets[0].data = [];
         scopeChart.update();
@@ -191,6 +192,33 @@ $('btn-disparo').addEventListener('click', () => {
     b.setAttribute('aria-pressed', String(disparoActivo));
     dibujarOsciloscopio(scopeMostrado);
 });
+
+// ------------------------------------------------- mostrar / ocultar osciloscopio
+const CLAVE_SCOPE_OCULTO = 'scopeOculto';
+
+function aplicarVisibilidadScope(oculto) {
+    $('scope-body').hidden = oculto;
+    $('btn-congelar').hidden = oculto;
+    $('btn-disparo').hidden = oculto;
+    const b = $('btn-ocultar');
+    b.textContent = oculto ? '👁 Mostrar' : '🙈 Ocultar';
+    b.classList.toggle('activo', oculto);
+    b.setAttribute('aria-expanded', String(!oculto));
+    if (!oculto) {              // el canvas estaba sin tamaño: se reajusta y se redibuja
+        scopeChart.resize();
+        dibujarOsciloscopio(scopeMostrado);
+    }
+}
+
+$('btn-ocultar').addEventListener('click', () => {
+    const oculto = !$('scope-body').hidden;
+    aplicarVisibilidadScope(oculto);
+    try { localStorage.setItem(CLAVE_SCOPE_OCULTO, oculto ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
+});
+
+try {   // recuerda la preferencia entre visitas
+    if (localStorage.getItem(CLAVE_SCOPE_OCULTO) === '1') aplicarVisibilidadScope(true);
+} catch (e) { /* sin almacenamiento */ }
 
 // ------------------------------------------------------- umbral de sobrecarga
 const inputUmbral = $('input-umbral');
